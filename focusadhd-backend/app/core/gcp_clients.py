@@ -188,18 +188,16 @@ def upload_to_gcs(
         except Exception as e:
             logger.debug(f"Signed URL generation skipped/failed: {e}")
 
-        # Strategy 2: Try making the object public
+        # Strategy 2: Try making the object public (if bucket allows)
         try:
             blob.make_public()
             logger.info(f"Object made public: {blob.public_url}")
             return {"url": blob.public_url, "type": "url"}
         except Exception as e:
-            logger.debug(f"make_public failed (Uniform Bucket Access?): {e}")
+            logger.warning(f"make_public failed: {e}")
 
-        # Strategy 3: Return the GCS public URL pattern
-        # (works if bucket has allUsers read via IAM)
-        public_url = f"https://storage.googleapis.com/{bucket_name}/{filename}"
-        return {"url": public_url, "type": "url"}
+        # If both signed URLs and public URLs failed, return base64
+        return _base64_fallback(data, content_type)
 
     except Exception as e:
         logger.error(f"GCS upload failed: {e} — falling back to base64")

@@ -7,17 +7,19 @@ ARG VITE_API_BASE_URL
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
 
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+
 COPY package*.json ./
-RUN npm ci
+
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 
 COPY . .
 
-RUN VITE_API_BASE_URL="${VITE_API_BASE_URL:-}" \
-    VITE_SUPABASE_URL="${VITE_SUPABASE_URL:-}" \
-    VITE_SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY:-}" \
-    npm run build && \
-    mkdir -p /app/dist && \
-    echo "BUILD_VARS=${VITE_API_BASE_URL}:${VITE_SUPABASE_URL}:${VITE_SUPABASE_ANON_KEY}" > /app/dist/vars.txt
+RUN --mount=type=cache,target=/root/.npm \
+    npm run build
 
 # Stage 2: Serve with Nginx
 FROM nginx:stable-alpine

@@ -12,10 +12,12 @@ RUN npm ci
 
 COPY . .
 
-RUN VITE_API_BASE_URL="${VITE_API_BASE_URL}" \
-    VITE_SUPABASE_URL="${VITE_SUPABASE_URL}" \
-    VITE_SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY}" \
-    npm run build
+RUN VITE_API_BASE_URL="${VITE_API_BASE_URL:-}" \
+    VITE_SUPABASE_URL="${VITE_SUPABASE_URL:-}" \
+    VITE_SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY:-}" \
+    npm run build && \
+    mkdir -p /app/dist && \
+    echo "BUILD_VARS=${VITE_API_BASE_URL}:${VITE_SUPABASE_URL}:${VITE_SUPABASE_ANON_KEY}" > /app/dist/vars.txt
 
 # Stage 2: Serve with Nginx
 FROM nginx:stable-alpine

@@ -32,9 +32,7 @@ class VisualAgent:
                 response = await func(
                     model="imagen-3.0-generate-001",
                     prompt=prompt,
-                    config=types.GenerateImagesConfig(
-                        number_of_images=1, output_mime_type="image/jpeg"
-                    ),
+                    config={"number_of_images": 1, "output_mime_type": "image/jpeg"},
                 )
                 if response.generated_images:
                     return response.generated_images[0].image.image_bytes
@@ -59,9 +57,7 @@ class VisualAgent:
                     func,
                     model="imagen-3.0-generate-001",
                     prompt=prompt,
-                    config=types.GenerateImagesConfig(
-                        number_of_images=1, output_mime_type="image/jpeg"
-                    ),
+                    config={"number_of_images": 1, "output_mime_type": "image/jpeg"},
                 )
                 if response.generated_images:
                     return response.generated_images[0].image.image_bytes
@@ -74,6 +70,5 @@ class VisualAgent:
             f"Models attrs: {dir(client.models)}"
         )
         return None
-
 
 visual_agent = VisualAgent()

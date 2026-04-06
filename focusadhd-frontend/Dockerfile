@@ -12,14 +12,11 @@ ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
 COPY package*.json ./
-
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci
+RUN npm ci
 
 COPY . .
 
-RUN --mount=type=cache,target=/root/.npm \
-    npm run build
+RUN npm run build
 
 # Stage 2: Serve with Nginx
 FROM nginx:stable-alpine

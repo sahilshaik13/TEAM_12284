@@ -89,7 +89,7 @@ class TextAgent:
             temperature=0.7,
         )
 
-        response_stream = await client.aio.models.generate_content_stream(
+        response_stream = client.aio.models.generate_content_stream(
             model=MODEL_NAME,
             contents=prompt,
             config=config,

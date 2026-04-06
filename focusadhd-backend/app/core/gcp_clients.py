@@ -31,9 +31,11 @@ def _resolve_credentials():
     """
     Resolve GCP credentials in priority order:
     1. GCP_SERVICE_ACCOUNT_JSON env var (for CI/CD)
-    2. GOOGLE_APPLICATION_CREDENTIALS file (local dev — supports both
-       authorized_user and service_account types)
-    3. google.auth.default() — automatic (Cloud Run, gcloud CLI, etc.)
+    2. GOOGLE_APPLICATION_CREDENTIALS file (local dev only — must exist on disk)
+    3. google.auth.default() — ADC: Cloud Run attached service account, gcloud CLI, etc.
+
+    On Cloud Run, do NOT set GOOGLE_APPLICATION_CREDENTIALS.
+    The attached service account is picked up automatically via the metadata server.
     """
     global _credentials, _project_id
 
@@ -49,20 +51,27 @@ def _resolve_credentials():
         except Exception as e:
             logger.error(f"Failed to parse GCP_SERVICE_ACCOUNT_JSON: {e}")
 
-    # 2. Credentials file (authorized_user OR service_account)
+    # 2. Credentials file — only if the file actually exists on disk.
+    # On Cloud Run this var should not be set; skip it to fall through to ADC.
     creds_path = settings.GOOGLE_APPLICATION_CREDENTIALS
     if creds_path:
         creds_path = os.path.normpath(creds_path.strip('"').strip("'"))
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = creds_path
+        if os.path.exists(creds_path):
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = creds_path
+            logger.info(f"Using local credentials file: {creds_path}")
+        else:
+            # File doesn't exist — clear from env so ADC uses the metadata server
+            os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
+            logger.info("GOOGLE_APPLICATION_CREDENTIALS path not found on disk — using ADC (metadata server / attached service account)")
 
-    # 3. Use google.auth.default() — handles ALL credential types automatically
+    # 3. Use google.auth.default() — handles ALL credential types automatically.
+    # On Cloud Run this picks up the attached service account via the metadata server.
     try:
         _credentials, discovered_project = google.auth.default(
             scopes=["https://www.googleapis.com/auth/cloud-platform"]
         )
         if not _project_id and discovered_project:
             _project_id = discovered_project
-        # If project is still from the cred file's quota_project_id, use it
         if not _project_id and creds_path and os.path.exists(creds_path):
             try:
                 with open(creds_path, "r") as f:

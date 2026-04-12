@@ -2,29 +2,46 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchWithAuth } from "../services/api";
 import { useAuthStore } from "../store/authStore";
-import { Loader2, Plus, BookOpen, Clock, Activity, Calendar, Zap, Lightbulb, TrendingUp, ChevronRight } from "lucide-react";
+import {
+  Loader2, Plus, BookOpen, Clock, Activity,
+  Calendar, TrendingUp, ChevronRight, Sparkles
+} from "lucide-react";
 
-const QUICK_TIPS = [
-  "Try the Simplify button when you feel stuck on a paragraph.",
-  "Enable AI Voice for a different way to absorb content.",
-  "You can override any adaptation from the toolbar — you're always in control."
+const AFFIRMATIONS = [
+  "One focused step at a time — you've got this.",
+  "Focus is a muscle. You're building it right now.",
+  "Your potential is limitless.",
+  "Mistakes are proof that you are trying.",
+  "Take a deep breath and keep going.",
+  "You are capable of amazing things.",
+  "Destiny can only be changed in the present.",
+  "Progress, not perfection.",
+  "Every expert was once a beginner.",
 ];
 
+const getStateBadgeClass = (state) => {
+  switch (state?.toLowerCase()) {
+    case "focused":    return "state-badge state-focused";
+    case "drifting":   return "state-badge state-drifting";
+    case "overloaded": return "state-badge state-overloaded";
+    case "completed":  return "state-badge state-completed";
+    default:           return "state-badge state-default";
+  }
+};
+
 export function DashboardPage() {
-  const user = useAuthStore((state) => state.user);
+  const user = useAuthStore((s) => s.user);
   const [topic, setTopic] = useState("");
   const [loadingAction, setLoadingAction] = useState(false);
-  
   const [dashboardData, setDashboardData] = useState(null);
   const [fetching, setFetching] = useState(true);
-  
-  const [currentTip, setCurrentTip] = useState(0);
+  const [affIdx, setAffIdx] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
-    async function loadDashboard() {
+    async function load() {
       try {
-        const data = await fetchWithAuth('/users/me/dashboard');
+        const data = await fetchWithAuth("/users/me/dashboard");
         setDashboardData(data);
       } catch (err) {
         console.error("Failed to load dashboard:", err);
@@ -32,28 +49,24 @@ export function DashboardPage() {
         setFetching(false);
       }
     }
-    loadDashboard();
-    
-    const tipInterval = setInterval(() => {
-        setCurrentTip(prev => (prev + 1) % QUICK_TIPS.length);
-    }, 15000);
-    return () => clearInterval(tipInterval);
+    load();
+
+    const t = setInterval(() => setAffIdx((p) => (p + 1) % AFFIRMATIONS.length), 12000);
+    return () => clearInterval(t);
   }, []);
 
   const startSession = async (e) => {
     e.preventDefault();
     if (!topic.trim()) return;
-    
     setLoadingAction(true);
     try {
-      const data = await fetchWithAuth('/sessions', {
-        method: 'POST',
-        body: JSON.stringify({ topic: topic.trim() })
+      const data = await fetchWithAuth("/sessions", {
+        method: "POST",
+        body: JSON.stringify({ topic: topic.trim() }),
       });
       localStorage.setItem(`session_start_${data.session_id}`, String(Date.now()));
       navigate(`/learn/${data.session_id}?topic=${encodeURIComponent(topic.trim())}`);
     } catch (err) {
-      console.error(err);
       alert("Failed to start session. " + err.message);
     } finally {
       setLoadingAction(false);
@@ -63,203 +76,252 @@ export function DashboardPage() {
   const formatFocusTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
-    if (hrs > 0) return `${hrs}h ${mins}m`;
-    return `${mins}m`;
+    return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
   };
 
-  const formatRelativeDate = (isoString) => {
-    const date = new Date(isoString);
-    const now = new Date();
-    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-    return `${diffDays} days ago`;
+  const formatRelDate = (iso) => {
+    const diff = Math.floor((Date.now() - new Date(iso)) / 86400000);
+    if (diff === 0) return "Today";
+    if (diff === 1) return "Yesterday";
+    return `${diff}d ago`;
   };
 
-  const getStateBadgeColor = (state) => {
-    switch (state?.toLowerCase()) {
-      case 'focused': return 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400';
-      case 'drifting': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400';
-      case 'overloaded': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400';
-      case 'completed': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400';
-      default: return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400';
-    }
-  };
+  const displayName = (() => {
+    const meta = user?.user_metadata;
+    const name = meta?.display_name || meta?.full_name || meta?.name;
+    if (name && name !== "Student") return name.split(" ")[0];
+    const bn = dashboardData?.display_name;
+    if (!bn || bn === "Student" || bn === "Learner") return "there";
+    return bn.includes("@") ? bn.split("@")[0] : bn;
+  })();
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
-      
-      {/* Welcome Banner */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-6 fade-up">
+
+      {/* ── Welcome row ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           {fetching ? (
-              <div className="h-8 w-48 bg-blue-100 dark:bg-slate-700/50 animate-pulse rounded mb-2"></div>
+            <div className="skeleton h-9 w-52 mb-2" />
           ) : (
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                Hello, {(() => {
-                    const metadataName = user?.user_metadata?.display_name || user?.user_metadata?.full_name || user?.user_metadata?.name;
-                    if (metadataName && metadataName !== 'Student') return metadataName;
-                    
-                    const backendName = dashboardData?.display_name;
-                    if (!backendName || backendName === 'Student' || backendName === 'Learner') return 'Learner';
-                    
-                    if (backendName.includes('@')) return backendName.split('@')[0];
-                    return backendName;
-                })()}! 👋
-              </h1>
+            <h1 style={{ fontSize: "2.1rem", fontWeight: 800, color: "#D9F5F0", lineHeight: 1.15 }}>
+              Hey, {displayName} 👋
+            </h1>
           )}
-          <p className="text-blue-600 dark:text-blue-300">Ready to explore a new concept?</p>
+          <p style={{ color: "rgba(117,226,224,0.65)", fontSize: "1rem", marginTop: 4 }}>
+            Ready to explore something new?
+          </p>
         </div>
-      </div>
 
-      {/* KPI Stats Row (3 Cards) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {fetching ? (
-          <>
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-100 dark:border-slate-700 animate-pulse h-28"></div>
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-100 dark:border-slate-700 animate-pulse h-28"></div>
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-100 dark:border-slate-700 animate-pulse h-28"></div>
-          </>
-        ) : (
-          <>
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-              <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg">
-                <BookOpen className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Sessions</p>
-                <p className="text-3xl font-black text-slate-900 dark:text-white">{dashboardData?.kpis.total_sessions || 0}</p>
-              </div>
-            </div>
-            
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg">
-                <Clock className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Focus Time</p>
-                <p className="text-3xl font-black text-slate-900 dark:text-white">{formatFocusTime(dashboardData?.kpis.focus_seconds || 0)}</p>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-              <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
-                <TrendingUp className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Avg Engagement</p>
-                <p className="text-3xl font-black text-slate-900 dark:text-white">{dashboardData?.kpis.avg_engagement || 0}%</p>
-              </div>
-            </div>
-          </>
+        {/* Affirmation chip */}
+        {!fetching && (
+          <div
+            className="glass-lt flex items-center gap-2 px-4 py-2 rounded-xl max-w-xs"
+            style={{ border: "1px solid rgba(117,226,224,0.2)" }}
+          >
+            <Sparkles size={15} style={{ color: "#75E2E0", flexShrink: 0 }} />
+            <p style={{ fontSize: "0.82rem", color: "rgba(217,245,240,0.75)", lineHeight: 1.4 }}>
+              {AFFIRMATIONS[affIdx]}
+            </p>
+          </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column (Main Content) */}
-        <div className="lg:col-span-2 space-y-8">
-          
-          {/* Highest Priority CTA */}
-          <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-indigo-100 dark:border-indigo-900/30 p-8">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Dive into a new topic</h2>
-            <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">Enter a topic, concept, or paste a question to begin a focused learning session.</p>
-            
-            <form onSubmit={startSession} className="relative">
+      {/* ── KPI row ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          {
+            label: "Total Sessions",
+            value: fetching ? null : (dashboardData?.kpis?.total_sessions ?? 0),
+            icon: BookOpen,
+            color: "#2CACAO",
+          },
+          {
+            label: "Focus Time",
+            value: fetching ? null : formatFocusTime(dashboardData?.kpis?.focus_seconds ?? 0),
+            icon: Clock,
+            color: "#75E2E0",
+          },
+          {
+            label: "Avg Engagement",
+            value: fetching ? null : `${dashboardData?.kpis?.avg_engagement ?? 0}%`,
+            icon: TrendingUp,
+            color: "#1C4EA7",
+          },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="glass p-5 flex items-center gap-4">
+            <div
+              className="flex items-center justify-center w-11 h-11 rounded-xl flex-shrink-0"
+              style={{ background: `${color}22`, border: `1px solid ${color}44` }}
+            >
+              <Icon size={20} style={{ color }} />
+            </div>
+            <div>
+              <p style={{ fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "rgba(117,226,224,0.55)" }}>
+                {label}
+              </p>
+              {fetching ? (
+                <div className="skeleton h-8 w-16 mt-1" />
+              ) : (
+                <p style={{ fontSize: "2rem", fontWeight: 900, color: "#D9F5F0", lineHeight: 1 }}>
+                  {value}
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Main + Sidebar grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Left: Start session + recent sessions */}
+        <div className="lg:col-span-2 space-y-5">
+
+          {/* Start session */}
+          <div className="glass p-6">
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "#D9F5F0", marginBottom: 4 }}>
+              Start a New Session
+            </h2>
+            <p style={{ fontSize: "0.88rem", color: "rgba(117,226,224,0.55)", marginBottom: 18 }}>
+              Enter any topic, concept, or paste a question to begin a focused AI session.
+            </p>
+
+            <form onSubmit={startSession} className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 placeholder="e.g. What is Machine Learning?"
-                className="w-full pl-6 pr-40 py-5 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:bg-white focus:border-indigo-500 transition-all text-slate-900 dark:text-white text-lg shadow-inner font-medium outline-none"
+                className="glass-input flex-1"
                 autoFocus
               />
               <button
                 type="submit"
                 disabled={!topic.trim() || loadingAction}
-                className="absolute right-2 top-2 bottom-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8 rounded-lg font-bold transition-all disabled:opacity-50 flex items-center tracking-wide"
+                className="btn-primary whitespace-nowrap"
               >
-                {loadingAction ? <Loader2 className="h-5 w-5 animate-spin" /> : <>Start Learning <Plus className="h-5 w-5 ml-1" /></>}
+                {loadingAction ? (
+                  <Loader2 size={17} className="animate-spin" />
+                ) : (
+                  <>
+                    <Plus size={17} /> Start Learning
+                  </>
+                )}
               </button>
             </form>
-          </section>
+          </div>
 
-          {/* Recent Sessions List */}
-          <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-            <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center">
-                <Activity className="h-5 w-5 mr-2 text-indigo-500" />
+          {/* Recent sessions */}
+          <div className="glass overflow-hidden">
+            <div
+              className="px-6 py-4 flex items-center gap-2"
+              style={{ borderBottom: "1px solid rgba(117,226,224,0.1)" }}
+            >
+              <Activity size={17} style={{ color: "#2CACAO" }} />
+              <h3 style={{ fontWeight: 800, color: "#D9F5F0", fontSize: "1rem" }}>
                 Recent Sessions
-                </h3>
+              </h3>
             </div>
-            
-            <div className="divide-y divide-slate-100 dark:divide-slate-700">
-                {fetching ? (
-                <div className="p-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-slate-300" /></div>
-                ) : dashboardData?.recent_sessions.length === 0 ? (
-                <div className="p-12 text-center">
-                    <BookOpen className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                    <p className="text-slate-500 dark:text-slate-400">Your completed sessions will appear here.</p>
-                </div>
-                ) : (
-                dashboardData?.recent_sessions.map(session => (
-                    <div 
-                        key={session.id} 
-                        onClick={() => navigate(`/learn/${session.id}?topic=${encodeURIComponent(session.topic)}`)}
-                        className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors cursor-pointer group"
-                    >
-                        <div>
-                            <h4 className="font-bold text-slate-900 dark:text-white text-lg line-clamp-1 mb-1 group-hover:text-indigo-600 transition-colors">{session.topic}</h4>
-                            <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400 font-medium">
-                                <span className="flex items-center"><Calendar className="w-4 h-4 mr-1" /> {formatRelativeDate(session.created_at)}</span>
-                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${getStateBadgeColor(session.dominant_state)}`}>
-                                    {session.dominant_state}
-                                </span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">Resume Session</span>
-                            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-500 transition-colors" />
-                        </div>
-                    </div>
-                ))
-                )}
-            </div>
-            {dashboardData?.recent_sessions.length === 7 && (
-                <div className="p-4 text-center border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80">
-                    <button className="text-sm font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors">
-                        View All Sessions
-                    </button>
-                </div>
-            )}
-          </section>
 
+            <div className="divide-y" style={{ "--tw-divide-opacity": 1 }}>
+              {fetching ? (
+                <div className="p-10 flex justify-center">
+                  <Loader2 size={28} className="animate-spin" style={{ color: "#2CACAO" }} />
+                </div>
+              ) : !dashboardData?.recent_sessions?.length ? (
+                <div className="p-12 text-center">
+                  <BookOpen size={36} style={{ color: "rgba(44,172,173,0.3)", margin: "0 auto 12px" }} />
+                  <p style={{ color: "rgba(117,226,224,0.45)", fontSize: "0.9rem" }}>
+                    Your sessions will appear here once you start learning.
+                  </p>
+                </div>
+              ) : (
+                dashboardData.recent_sessions.map((s) => (
+                  <div
+                    key={s.id}
+                    className="session-row"
+                    onClick={() =>
+                      navigate(`/learn/${s.id}?topic=${encodeURIComponent(s.topic)}`)
+                    }
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="font-semibold truncate"
+                        style={{ color: "#D9F5F0", fontSize: "0.95rem" }}
+                      >
+                        {s.topic}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span style={{ fontSize: "0.78rem", color: "rgba(117,226,224,0.5)" }}>
+                          <Calendar size={12} style={{ display: "inline", marginRight: 4 }} />
+                          {formatRelDate(s.created_at)}
+                        </span>
+                        <span className={getStateBadgeClass(s.dominant_state)}>
+                          {s.dominant_state}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight
+                      size={17}
+                      style={{ color: "rgba(117,226,224,0.3)", flexShrink: 0 }}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Right Column (Sidebar) */}
-        <div className="lg:col-span-1 space-y-8">
-            
-            {/* Quick Tips Panel */}
-            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-slate-800 dark:to-slate-800 border border-indigo-100 dark:border-slate-700 rounded-2xl p-6 shadow-sm overflow-hidden relative">
-                <div className="absolute -right-4 -top-4 text-indigo-100 dark:text-slate-700/50 transform rotate-12">
-                    <Lightbulb className="w-32 h-32" />
-                </div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4 relative z-10 flex items-center">
-                    <Zap className="w-5 h-5 text-indigo-500 mr-2" /> Quick Tips
-                </h3>
-                
-                <div className="relative z-10 min-h-[100px] flex items-center">
-                    <p className="text-slate-700 dark:text-slate-300 font-medium text-lg leading-relaxed transition-opacity duration-500">
-                        "{QUICK_TIPS[currentTip]}"
-                    </p>
-                </div>
-
-                <div className="flex gap-2 mt-4 relative z-10">
-                    {QUICK_TIPS.map((_, i) => (
-                        <div key={i} className={`h-1.5 rounded-full transition-all ${i === currentTip ? 'w-6 bg-indigo-500' : 'w-2 bg-indigo-200 dark:bg-slate-600'}`}></div>
-                    ))}
-                </div>
+        {/* Right: Affirmation card */}
+        <div className="space-y-5">
+          <div
+            className="glass p-6 min-h-[200px] flex flex-col justify-between"
+            style={{
+              background:
+                "linear-gradient(145deg, rgba(2,77,96,0.3) 0%, rgba(28,78,167,0.2) 100%)",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles size={16} style={{ color: "#75E2E0" }} />
+              <span
+                style={{
+                  fontSize: "0.75rem", fontWeight: 700,
+                  letterSpacing: "0.1em", textTransform: "uppercase",
+                  color: "rgba(117,226,224,0.6)",
+                }}
+              >
+                Daily Affirmation
+              </span>
             </div>
 
+            <p
+              style={{
+                fontSize: "1.25rem", fontWeight: 700,
+                color: "#D9F5F0", lineHeight: 1.5, flex: 1,
+              }}
+            >
+              "{AFFIRMATIONS[affIdx]}"
+            </p>
+
+            {/* Dots indicator */}
+            <div className="flex gap-1.5 mt-5">
+              {AFFIRMATIONS.map((_, i) => (
+                <div
+                  key={i}
+                  onClick={() => setAffIdx(i)}
+                  style={{
+                    width: i === affIdx ? 20 : 6,
+                    height: 6,
+                    borderRadius: 999,
+                    background: i === affIdx ? "#2CACAO" : "rgba(117,226,224,0.2)",
+                    transition: "all 0.3s",
+                    cursor: "pointer",
+                  }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

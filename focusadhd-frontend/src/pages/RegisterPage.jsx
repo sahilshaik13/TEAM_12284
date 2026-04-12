@@ -17,24 +17,14 @@ export function RegisterPage() {
     e.preventDefault();
     setErrorMsg("");
 
-    if (password !== confirmPassword) {
-      return setErrorMsg("Passwords do not match");
-    }
-
-    if (password.length < 8) {
-      return setErrorMsg("Password must be at least 8 characters");
-    }
+    if (password !== confirmPassword) return setErrorMsg("Passwords do not match.");
+    if (password.length < 8) return setErrorMsg("Password must be at least 8 characters.");
 
     setLoading(true);
-
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          display_name: name,
-        },
-      },
+      options: { data: { display_name: name } },
     });
 
     if (error) {
@@ -47,107 +37,92 @@ export function RegisterPage() {
 
   return (
     <>
-      <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6 text-center">
+      <h2
+        style={{
+          fontSize: "1.5rem", fontWeight: 800,
+          color: "#D9F5F0", textAlign: "center", marginBottom: 24,
+        }}
+      >
         Create your account
-      </h3>
-      
+      </h2>
+
       {errorMsg && (
-        <div className="mb-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-md text-sm border border-red-100 dark:border-red-900/50">
+        <div
+          className="mb-5 px-4 py-3 rounded-xl text-sm"
+          style={{
+            background: "rgba(239,83,80,0.12)",
+            border: "1px solid rgba(239,83,80,0.3)",
+            color: "#ef9090",
+          }}
+        >
           {errorMsg}
         </div>
       )}
 
       <form onSubmit={handleRegister} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" htmlFor="name">
-            Display Name
-          </label>
+          <label className="form-label" htmlFor="reg-name">Display Name</label>
           <input
-            id="name"
-            type="text"
-            required
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white transition-colors"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={loading}
+            id="reg-name" type="text" required
+            className="glass-input"
+            value={name} onChange={(e) => setName(e.target.value)} disabled={loading}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" htmlFor="email">
-            Email address
-          </label>
+          <label className="form-label" htmlFor="reg-email">Email address</label>
           <input
-            id="email"
-            type="email"
-            required
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white transition-colors"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
+            id="reg-email" type="email" required
+            className="glass-input"
+            value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" htmlFor="password">
-            Password
-          </label>
+          <label className="form-label" htmlFor="reg-password">Password</label>
           <div className="relative">
             <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              required
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white transition-colors pr-10"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
+              id="reg-password"
+              type={showPassword ? "text" : "password"} required
+              className="glass-input pr-12"
+              value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading}
             />
             <button
               type="button"
-              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 focus:outline-none"
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+              style={{ color: "rgba(117,226,224,0.5)", background: "none", border: "none", cursor: "pointer" }}
               onClick={() => setShowPassword(!showPassword)}
             >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
             </button>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" htmlFor="confirmPassword">
-            Confirm Password
-          </label>
+          <label className="form-label" htmlFor="reg-confirm">Confirm Password</label>
           <input
-            id="confirmPassword"
-            type={showPassword ? "text" : "password"}
-            required
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white transition-colors"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            disabled={loading}
+            id="reg-confirm"
+            type={showPassword ? "text" : "password"} required
+            className="glass-input"
+            value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={loading}
           />
         </div>
 
         <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex justify-center mt-6 py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 transition-colors"
+          type="submit" disabled={loading}
+          className="btn-primary w-full justify-center"
+          style={{ marginTop: 8 }}
         >
-          {loading ? <Loader2 className="animate-spin h-5 w-5" /> : "Create Account"}
+          {loading ? <Loader2 size={18} className="animate-spin" /> : "Create Account"}
         </button>
       </form>
 
-      <div className="mt-6 text-center text-sm">
-        <span className="text-slate-600 dark:text-slate-400">Already have an account? </span>
-        <Link to="/login" className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
+      <p className="mt-6 text-center" style={{ fontSize: "0.88rem", color: "rgba(117,226,224,0.55)" }}>
+        Already have an account?{" "}
+        <Link to="/login" style={{ color: "#75E2E0", fontWeight: 700 }}>
           Sign in
         </Link>
-      </div>
-
-      <div className="mt-12 pt-6 border-t border-slate-100 dark:border-slate-800">
-        <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed text-center">
-            <strong>Disclaimer:</strong> This tool is for educational support. It is not a medical diagnostic tool or replacement for professional advice.
-        </p>
-      </div>
+      </p>
     </>
   );
 }

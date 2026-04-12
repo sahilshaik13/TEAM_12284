@@ -1,37 +1,64 @@
 import { Outlet, Navigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
-import { SkipNavLink } from "../components/ui/SkipNavLink";
+import { Zap } from "lucide-react";
 
 export function AuthLayout() {
   const session = useAuthStore((state) => state.session);
-
-  // Redirect to dashboard if already logged in
-  if (session) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  if (session) return <Navigate to="/dashboard" replace />;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors">
-      <SkipNavLink />
-      <div id="main-content" className="sm:mx-auto sm:w-full sm:max-w-md focus:outline-none" tabIndex={-1}>
-        <div className="flex justify-center flex-col items-center mb-8">
-          <div className="h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center mb-4">
-            <span className="text-white font-bold text-xl">FA</span>
+    <div
+      className="min-h-screen flex items-center justify-center px-4 py-12"
+      style={{ background: "#000" }}
+    >
+      {/* Ambient background blobs */}
+      <div
+        style={{
+          position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
+          background:
+            "radial-gradient(ellipse 70% 60% at 15% 20%, rgba(28,78,167,0.3) 0%, transparent 60%)," +
+            "radial-gradient(ellipse 60% 50% at 85% 80%, rgba(44,172,173,0.25) 0%, transparent 60%)",
+        }}
+      />
+
+      <div className="relative z-10 w-full max-w-md fade-up">
+        {/* Brand header */}
+        <div className="text-center mb-8">
+          <div
+            className="mx-auto mb-4 flex items-center justify-center w-14 h-14 rounded-2xl"
+            style={{
+              background: "linear-gradient(135deg,#024D60,#2CACAO)",
+              boxShadow: "0 0 30px rgba(44,172,173,0.35)",
+            }}
+          >
+            <Zap size={26} style={{ color: "#D9F5F0" }} />
           </div>
-          <h2 className="text-center text-3xl font-extrabold text-slate-900 dark:text-white">
+          <h1
+            style={{
+              fontSize: "2rem", fontWeight: 800,
+              color: "#D9F5F0", letterSpacing: "0.01em",
+            }}
+          >
             FocusADHD
-          </h2>
-          <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">
+          </h1>
+          <p style={{ color: "rgba(117,226,224,0.65)", fontSize: "0.93rem", marginTop: 4 }}>
             Learn at your own pace
           </p>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 py-8 px-4 shadow-xl sm:rounded-xl sm:px-10 border border-slate-100 dark:border-slate-700">
+        {/* Glass card */}
+        <div className="glass p-8">
           <Outlet />
         </div>
-        
-        <p className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-          We do not diagnose ADHD or any medical condition. FocusADHD is a learning tool designed to adapt content to your pace.
+
+        {/* Disclaimer */}
+        <p
+          className="mt-6 text-center"
+          style={{ fontSize: "0.72rem", color: "rgba(117,226,224,0.4)", lineHeight: 1.6 }}
+        >
+          <strong style={{ color: "rgba(117,226,224,0.55)" }}>Disclaimer:</strong>{" "}
+          This tool is for educational support only. Not a medical diagnostic tool
+          or a replacement for professional advice.
         </p>
       </div>
     </div>

@@ -15,12 +15,7 @@ export function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setErrorMsg("");
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       if (error.message.includes("Email not confirmed")) {
         navigate("/verify-email", { state: { email } });
@@ -35,26 +30,36 @@ export function LoginPage() {
 
   return (
     <>
-      <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6 text-center">
+      <h2
+        style={{
+          fontSize: "1.5rem", fontWeight: 800,
+          color: "#D9F5F0", textAlign: "center", marginBottom: 24,
+        }}
+      >
         Sign in to your account
-      </h3>
-      
+      </h2>
+
       {errorMsg && (
-        <div className="mb-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-md text-sm border border-red-100 dark:border-red-900/50">
+        <div
+          className="mb-5 px-4 py-3 rounded-xl text-sm"
+          style={{
+            background: "rgba(239,83,80,0.12)",
+            border: "1px solid rgba(239,83,80,0.3)",
+            color: "#ef9090",
+          }}
+        >
           {errorMsg}
         </div>
       )}
 
-      <form onSubmit={handleLogin} className="space-y-5">
+      <form onSubmit={handleLogin} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1" htmlFor="email">
-            Email address
-          </label>
+          <label className="form-label" htmlFor="login-email">Email address</label>
           <input
-            id="email"
+            id="login-email"
             type="email"
             required
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white transition-colors"
+            className="glass-input"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
@@ -62,56 +67,50 @@ export function LoginPage() {
         </div>
 
         <div>
-          <div className="flex justify-between items-center mb-1">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="password">
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="form-label" htmlFor="login-password" style={{ marginBottom: 0 }}>
               Password
             </label>
-            <Link to="/forgot-password" className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500">
+            <Link
+              to="/forgot-password"
+              style={{ fontSize: "0.8rem", color: "#75E2E0" }}
+            >
               Forgot password?
             </Link>
           </div>
           <div className="relative">
             <input
-              id="password"
+              id="login-password"
               type={showPassword ? "text" : "password"}
               required
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-700 dark:text-white transition-colors pr-10"
+              className="glass-input pr-12"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
             />
             <button
               type="button"
-              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none"
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+              style={{ color: "rgba(117,226,224,0.5)", background: "none", border: "none", cursor: "pointer" }}
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
             </button>
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
-        >
-          {loading ? <Loader2 className="animate-spin h-5 w-5" /> : "Sign In"}
+        <button type="submit" disabled={loading} className="btn-primary w-full justify-center mt-2" style={{ marginTop: 12 }}>
+          {loading ? <Loader2 size={18} className="animate-spin" /> : "Sign In"}
         </button>
       </form>
 
-      <div className="mt-6 text-center text-sm">
-        <span className="text-slate-600 dark:text-slate-400">Don't have an account? </span>
-        <Link to="/register" className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
+      <p className="mt-6 text-center" style={{ fontSize: "0.88rem", color: "rgba(117,226,224,0.55)" }}>
+        Don't have an account?{" "}
+        <Link to="/register" style={{ color: "#75E2E0", fontWeight: 700 }}>
           Sign up
         </Link>
-      </div>
-
-      <div className="mt-12 pt-6 border-t border-slate-100 dark:border-slate-800">
-        <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed text-center">
-            <strong>Disclaimer:</strong> This tool is for educational support. It is not a medical diagnostic tool or replacement for professional advice.
-        </p>
-      </div>
+      </p>
     </>
   );
 }

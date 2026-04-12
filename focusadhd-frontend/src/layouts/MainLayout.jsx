@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { BookOpen, Home, Settings, LogOut, Menu, X } from "lucide-react";
+import { BookOpen, LayoutDashboard, Settings, LogOut, Menu, X, Zap } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { supabase } from "../lib/supabase";
-import { SkipNavLink } from "../components/ui/SkipNavLink";
 
 export function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -16,108 +15,142 @@ export function MainLayout() {
   };
 
   const navItems = [
-    { name: "Dashboard", to: "/dashboard", icon: Home },
-    { name: "Settings", to: "/settings", icon: Settings },
+    { name: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+    { name: "Settings",   to: "/settings",  icon: Settings },
   ];
 
-  const displayName = user?.user_metadata?.display_name || "Student";
+  const displayName =
+    user?.user_metadata?.display_name ||
+    user?.user_metadata?.full_name ||
+    user?.email?.split("@")[0] ||
+    "Learner";
+
+  const initials = displayName.charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
-      <SkipNavLink />
+    <div className="min-h-screen flex" style={{ background: "#000" }}>
 
-      {/* Mobile nav header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 z-40">
-        <div className="flex items-center space-x-2">
-          <div className="h-8 w-8 bg-blue-600 rounded-md flex items-center justify-center">
-            <span className="text-white font-bold text-xs">FA</span>
-          </div>
-          <span className="font-bold text-slate-900 dark:text-white">FocusADHD</span>
-        </div>
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
-          aria-label="Toggle menu"
-        >
-          {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-
-      {/* Sidebar background overlay (mobile) */}
+      {/* ── Mobile overlay ── */}
       {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+        <div
+          className="fixed inset-0 z-40 lg:hidden"
+          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar navigation */}
-      <div className={`
-        fixed top-0 bottom-0 left-0 w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 z-50 transform transition-transform duration-200 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        <div className="h-full flex flex-col">
-          {/* Sidebar header (desktop only) */}
-          <div className="hidden lg:flex h-16 items-center px-6 border-b border-slate-200 dark:border-slate-700">
-            <div className="h-8 w-8 bg-blue-600 rounded-md flex items-center justify-center mr-3">
-              <span className="text-white font-bold text-xs">FA</span>
-            </div>
-            <span className="font-bold text-xl text-slate-900 dark:text-white">FocusADHD</span>
+      {/* ── Sidebar ── */}
+      <aside
+        className={`
+          fixed top-0 left-0 h-full z-50
+          flex flex-col
+          w-60
+          transition-transform duration-200
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+        `}
+        style={{
+          background: "rgba(2,77,96,0.15)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          borderRight: "1px solid rgba(117,226,224,0.15)",
+        }}
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-3 px-5 py-6" style={{ borderBottom: "1px solid rgba(117,226,224,0.1)" }}>
+          <div
+            className="flex items-center justify-center w-9 h-9 rounded-xl"
+            style={{ background: "linear-gradient(135deg,#024D60,#2CACAO)" }}
+          >
+            <Zap size={18} style={{ color: "#D9F5F0" }} />
           </div>
-
-          {/* Navigation Links */}
-          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.name}
-                to={item.to}
-                onClick={() => setSidebarOpen(false)}
-                className={({ isActive }) => `
-                  group flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors
-                  ${isActive 
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200' 
-                    : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'}
-                `}
-              >
-                <item.icon className="flex-shrink-0 mr-3 h-5 w-5" aria-hidden="true" />
-                {item.name}
-              </NavLink>
-            ))}
-          </nav>
-
-          {/* User Profile & Logout */}
-          <div className="flex-shrink-0 flex border-t border-slate-200 dark:border-slate-700 p-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center">
-                <div>
-                  <div className="h-9 w-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-medium">
-                    {displayName.charAt(0).toUpperCase()}
-                  </div>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{displayName}</p>
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="ml-2 flex-shrink-0 p-2 text-slate-400 hover:text-red-500 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              title="Sign Out"
-              aria-label="Sign out"
-            >
-              <LogOut size={20} />
-            </button>
-          </div>
+          <span style={{ color: "#D9F5F0", fontWeight: 800, fontSize: "1.15rem", letterSpacing: "0.02em" }}>
+            FocusADHD
+          </span>
         </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.name}
+              to={item.to}
+              onClick={() => setSidebarOpen(false)}
+              className={({ isActive }) =>
+                `nav-link ${isActive ? "active" : ""}`
+              }
+            >
+              <item.icon size={18} />
+              {item.name}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* User bottom */}
+        <div
+          className="p-4 flex items-center gap-3"
+          style={{ borderTop: "1px solid rgba(117,226,224,0.1)" }}
+        >
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
+            style={{
+              background: "linear-gradient(135deg,#1C4EA7,#2CACAO)",
+              color: "#D9F5F0",
+            }}
+          >
+            {initials}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate" style={{ color: "#D9F5F0" }}>
+              {displayName}
+            </p>
+          </div>
+          <button
+            onClick={handleSignOut}
+            title="Sign Out"
+            className="flex-shrink-0 p-1.5 rounded-lg transition-all"
+            style={{ color: "rgba(117,226,224,0.6)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#ef5350")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(117,226,224,0.6)")}
+          >
+            <LogOut size={17} />
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Mobile topbar ── */}
+      <div
+        className="lg:hidden fixed top-0 left-0 right-0 h-14 z-40 flex items-center justify-between px-4"
+        style={{
+          background: "rgba(0,0,0,0.7)",
+          backdropFilter: "blur(16px)",
+          borderBottom: "1px solid rgba(117,226,224,0.12)",
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <div
+            className="flex items-center justify-center w-8 h-8 rounded-lg"
+            style={{ background: "linear-gradient(135deg,#024D60,#2CACAO)" }}
+          >
+            <Zap size={15} style={{ color: "#D9F5F0" }} />
+          </div>
+          <span style={{ color: "#D9F5F0", fontWeight: 800, fontSize: "1rem" }}>FocusADHD</span>
+        </div>
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          style={{ color: "#75E2E0" }}
+          aria-label="Toggle menu"
+        >
+          {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
       </div>
 
-      {/* Main content area */}
-      <main 
-        id="main-content" 
-        className="lg:pl-64 flex flex-col flex-1 min-h-screen pt-16 lg:pt-0 focus:outline-none" 
+      {/* ── Main content ── */}
+      <main
+        id="main-content"
+        className="flex-1 lg:ml-60 min-h-screen pt-14 lg:pt-0 focus:outline-none"
         tabIndex={-1}
       >
-        <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <div className="page-wrapper">
           <Outlet />
         </div>
       </main>
